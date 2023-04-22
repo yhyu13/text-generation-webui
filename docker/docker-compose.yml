@@ -28,5 +28,6 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['0']
+              # yhyu13 config for dual 3090 
+              device_ids: ['0','1']
               capabilities: [gpu]

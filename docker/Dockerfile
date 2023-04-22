@@ -1,5 +1,7 @@
 FROM nvidia/cuda:11.8.0-devel-ubuntu22.04 as builder
 
+RUN export http_proxy=http://127.0.0.1:8889 && export https_proxy=http://127.0.0.1:8889
+
 RUN apt-get update && \
     apt-get install --no-install-recommends -y git vim build-essential python3-dev python3-venv && \
     rm -rf /var/lib/apt/lists/*
@@ -9,6 +11,12 @@ RUN git clone https://github.com/oobabooga/GPTQ-for-LLaMa /build
 WORKDIR /build
 
 RUN python3 -m venv /build/venv
+
+# yhyu13 : add mirror
+RUN . /build/venv/bin/activate && \ 
+    pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
+    pip3 config set global.extra-index-url https://download.pytorch.org/whl/cu118
+
 RUN . /build/venv/bin/activate && \
     pip3 install --upgrade pip setuptools wheel && \
     pip3 install torch torchvision torchaudio && \
@@ -16,14 +24,17 @@ RUN . /build/venv/bin/activate && \
 
 # https://developer.nvidia.com/cuda-gpus
 # for a rtx 2060: ARG TORCH_CUDA_ARCH_LIST="7.5"
-ARG TORCH_CUDA_ARCH_LIST="3.5;5.0;6.0;6.1;7.0;7.5;8.0;8.6+PTX"
+ARG TORCH_CUDA_ARCH_LIST="8.6"
 RUN . /build/venv/bin/activate && \
+    pip3 install wheel && \
     python3 setup_cuda.py bdist_wheel -d .
 
 FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
 
 LABEL maintainer="Your Name <your.email@example.com>"
 LABEL description="Docker image for GPTQ-for-LLaMa and Text Generation WebUI"
+
+RUN export http_proxy=http://127.0.0.1:8889 && export https_proxy=http://127.0.0.1:8889
 
 RUN apt-get update && \
     apt-get install --no-install-recommends -y libportaudio2 libasound-dev git python3 python3-pip make g++ && \
@@ -38,6 +49,12 @@ ARG WEBUI_VERSION
 RUN test -n "${WEBUI_VERSION}" && git reset --hard ${WEBUI_VERSION} || echo "Using provided webui source"
 
 RUN virtualenv /app/venv
+
+# yhyu13 : add mirror
+RUN . /app/venv/bin/activate && \ 
+    pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
+    pip3 config set global.extra-index-url https://download.pytorch.org/whl/cu118
+
 RUN . /app/venv/bin/activate && \
     pip3 install --upgrade pip setuptools wheel && \
     pip3 install torch torchvision torchaudio
