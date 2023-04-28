@@ -1,6 +1,7 @@
 FROM nvidia/cuda:11.8.0-devel-ubuntu22.04 as builder
 
-RUN export http_proxy=http://127.0.0.1:8889 && export https_proxy=http://127.0.0.1:8889
+ENV http_proxy http://127.0.0.1:8889
+ENV https_proxy=http://127.0.0.1:8889
 
 RUN apt-get update && \
     apt-get install --no-install-recommends -y git vim build-essential python3-dev python3-venv && \
@@ -31,10 +32,11 @@ RUN . /build/venv/bin/activate && \
 
 FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
 
+ENV http_proxy http://127.0.0.1:8889
+ENV https_proxy=http://127.0.0.1:8889
+
 LABEL maintainer="Your Name <your.email@example.com>"
 LABEL description="Docker image for GPTQ-for-LLaMa and Text Generation WebUI"
-
-RUN export http_proxy=http://127.0.0.1:8889 && export https_proxy=http://127.0.0.1:8889
 
 RUN apt-get update && \
     apt-get install --no-install-recommends -y libportaudio2 libasound-dev git python3 python3-pip make g++ && \

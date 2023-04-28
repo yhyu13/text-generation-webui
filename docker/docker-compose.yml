@@ -31,3 +31,4 @@ services:
               # yhyu13 config for dual 3090 
               device_ids: ['0','1']
               capabilities: [gpu]
+    network_mode: "host" 
