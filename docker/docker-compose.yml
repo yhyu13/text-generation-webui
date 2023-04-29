@@ -28,7 +28,5 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              # yhyu13 config for dual 3090 
-              device_ids: ['0','1']
+              device_ids: ['0']
               capabilities: [gpu]
-    network_mode: "host" 
