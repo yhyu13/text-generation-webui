@@ -1,7 +1,7 @@
 FROM nvidia/cuda:11.8.0-devel-ubuntu22.04 as builder
 
-ENV http_proxy http://127.0.0.1:8889
-ENV https_proxy http://127.0.0.1:8889
+ENV HTTP_PROXY http://127.0.0.1:8889
+ENV HTTPS_PROXY http://127.0.0.1:8889
 
 RUN apt-get update && \
     apt-get install --no-install-recommends -y git vim build-essential python3-dev python3-venv && \
@@ -30,20 +30,32 @@ RUN . /build/venv/bin/activate && \
     pip3 install wheel && \
     python3 setup_cuda.py bdist_wheel -d .
 
-ENV http_proxy ""
-ENV https_proxy ""
+ENV HTTP_PROXY ""
+ENV HTTPS_PROXY ""
 
-FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
+FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 
-ENV http_proxy http://127.0.0.1:8889
-ENV https_proxy http://127.0.0.1:8889
+ENV HTTP_PROXY http://127.0.0.1:8889
+ENV HTTPS_PROXY http://127.0.0.1:8889
 
 LABEL maintainer="Your Name <your.email@example.com>"
 LABEL description="Docker image for GPTQ-for-LLaMa and Text Generation WebUI"
 
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y libportaudio2 libasound-dev git python3 python3-pip make g++ && \
+    apt-get install --no-install-recommends -y libportaudio2 libasound-dev git python3 python3-pip make g++ plocate && \
     rm -rf /var/lib/apt/lists/*
+
+# yhyu13 : link cuda lib,
+# Issue : https://github.com/oobabooga/text-generation-webui/pull/1487
+# Solution : https://discuss.pytorch.org/t/libcudnn-cnn-infer-so-8-library-can-not-found/164661
+RUN if [ test -d "/usr/local/cuda-11.8" ]; then \
+        echo "/usr/local/cuda-11.8 directory exists." \
+    else \
+        echo "/usr/local/cuda-11.8 directory does not exist."; \
+        exit 1; \
+    fi 
+
+ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:/usr/lib:/usr/local/lib:${LD_LIBRARY_PATH}"
 
 RUN --mount=type=cache,target=/root/.cache/pip pip3 install virtualenv
 RUN mkdir /app
@@ -93,9 +105,10 @@ RUN . /app/venv/bin/activate && \
 
 RUN cp /app/venv/lib/python3.10/site-packages/bitsandbytes/libbitsandbytes_cuda118.so /app/venv/lib/python3.10/site-packages/bitsandbytes/libbitsandbytes_cpu.so
 
-ENV http_proxy ""
-ENV https_proxy ""
+ENV HTTP_PROXY ""
+ENV HTTPS_PROXY ""
 
 COPY . /app/
 ENV CLI_ARGS=""
-CMD . /app/venv/bin/activate && python3 server.py ${CLI_ARGS}
+ENV PRE_CLI_ARGS=""
+CMD . /app/venv/bin/activate && $PRE_CLI_ARGS && python3 server.py ${CLI_ARGS}
