@@ -1,7 +1,7 @@
 FROM nvidia/cuda:11.8.0-devel-ubuntu22.04 as builder
 
 ENV http_proxy http://127.0.0.1:8889
-ENV https_proxy=http://127.0.0.1:8889
+ENV https_proxy http://127.0.0.1:8889
 
 RUN apt-get update && \
     apt-get install --no-install-recommends -y git vim build-essential python3-dev python3-venv && \
@@ -30,10 +30,13 @@ RUN . /build/venv/bin/activate && \
     pip3 install wheel && \
     python3 setup_cuda.py bdist_wheel -d .
 
+ENV http_proxy ""
+ENV https_proxy ""
+
 FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
 
 ENV http_proxy http://127.0.0.1:8889
-ENV https_proxy=http://127.0.0.1:8889
+ENV https_proxy http://127.0.0.1:8889
 
 LABEL maintainer="Your Name <your.email@example.com>"
 LABEL description="Docker image for GPTQ-for-LLaMa and Text Generation WebUI"
@@ -61,6 +64,10 @@ RUN . /app/venv/bin/activate && \
     pip3 install --upgrade pip setuptools wheel && \
     pip3 install torch torchvision torchaudio
 
+# yhyu13 : install xformers
+RUN . /app/venv/bin/activate && \
+    pip3 install xformers
+
 COPY --from=builder /build /app/repositories/GPTQ-for-LLaMa
 RUN . /app/venv/bin/activate && \
     pip3 install /app/repositories/GPTQ-for-LLaMa/*.whl
@@ -76,11 +83,18 @@ RUN --mount=type=cache,target=/root/.cache/pip . /app/venv/bin/activate && cd ex
 RUN --mount=type=cache,target=/root/.cache/pip . /app/venv/bin/activate && cd extensions/silero_tts && pip3 install -r requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip . /app/venv/bin/activate && cd extensions/whisper_stt && pip3 install -r requirements.txt
 
+# yhyu13 : add long term memory extension
+COPY extensions/long_term_memory/requirements.txt /app/extensions/long_term_memory/requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip . /app/venv/bin/activate && cd extensions/long_term_memory && pip3 install -r requirements.txt
+
 COPY requirements.txt /app/requirements.txt
 RUN . /app/venv/bin/activate && \
     pip3 install -r requirements.txt
 
 RUN cp /app/venv/lib/python3.10/site-packages/bitsandbytes/libbitsandbytes_cuda118.so /app/venv/lib/python3.10/site-packages/bitsandbytes/libbitsandbytes_cpu.so
+
+ENV http_proxy ""
+ENV https_proxy ""
 
 COPY . /app/
 ENV CLI_ARGS=""
