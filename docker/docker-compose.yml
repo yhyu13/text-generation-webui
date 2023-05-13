@@ -10,10 +10,12 @@ services:
       # yhyu13 : use host network due to local proxy
       network: host
     env_file: .env
-    ports:
-      - "${HOST_PORT}:${CONTAINER_PORT}"
-      - "${HOST_API_PORT}:${CONTAINER_API_PORT}"
-      - "${HOST_API_STREAM_PORT}:${CONTAINER_API_STREAM_PORT}"
+    # yhyu13 : use host for local proxy
+    network_mode: "host"
+    #ports:
+      #- "${HOST_PORT}:${CONTAINER_PORT}"
+      #- "${HOST_API_PORT}:${CONTAINER_API_PORT}"
+      #- "${HOST_API_STREAM_PORT}:${CONTAINER_API_STREAM_PORT}"
     stdin_open: true
     tty: true
     volumes:
