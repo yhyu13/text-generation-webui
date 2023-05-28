@@ -62,7 +62,7 @@ RUN virtualenv /app/venv
 
 # yhyu13 : add mirror
 RUN . /app/venv/bin/activate && \ 
-    pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
+    pip3 config set global.index-url https://pypi.org/simple && \
     pip3 config set global.extra-index-url https://download.pytorch.org/whl/cu118
 
 RUN . /app/venv/bin/activate && \
